@@ -22,9 +22,7 @@ class ModelPark:
         if port:
             command += f" -p {port}"
         if detach:
-            command += " -d"
-        else:
-            command += " -D"
+            command += f" -d {str(detach).lower()}"
         CommandRunner.run_command(command)
 
     def stop(self):
