@@ -5,6 +5,9 @@ ModelPark provides a versatile platform to share and manage your ML models direc
 
 See [ModelPark](https://modelpark.app/) website and platform for more details.
 
+![image](https://github.com/model-park/modelpark/assets/25637056/6eac80e7-91e9-477a-bcce-bd7d369d932e)
+
+
 ## Features
 
 - Share models directly from the Python API.
