@@ -39,7 +39,20 @@ mp.login(username="your_username", password="your_password")
 mp.init()
 ```
 
-### Register an Application
+### Register an Application 
+
+#### Register an app running on a certain port
+```python
+mp.register(port=3000, name="my-app", access="public") 
+# access='private' if private (not visible/ accessible in modelpark dashboard)
+```
+#### Register a password protected app running on a certain port
+
+```python
+mp.register(port=3000, name="my-app", access="public", password='123')
+```
+
+#### Register a streamlit app that is not run yet 
 ```python
 mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
 ```

@@ -11,6 +11,7 @@ class CommandRunner:
         try:
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             print(f"Started process {process.pid}")
+            print (f"Command: {command}")
             if 'init' not in command:
                 stdout, stderr = process.communicate()
                 if process.returncode != 0:
@@ -53,7 +54,10 @@ class ModelPark:
         CommandRunner.run_command("modelpark logout")
 
     def register(self, port, name, file_path=None, access='private', password=None, framework=None):
-        command = f"modelpark register -p {port} -n {name} -a {access} -f {framework}"
+        if framework:
+            command = f"modelpark register -p {port} -n {name} -a {access} -f {framework}"
+        else:
+            command = f"modelpark register -p {port} -n {name} -a {access}"
         if file_path:
             command += f" {file_path}"
         if access == 'public' and password:
