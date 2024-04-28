@@ -10,15 +10,16 @@ class CommandRunner:
     def run_command(command):
         try:
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            stdout, stderr = process.communicate()
-            if process.returncode != 0:
-                print("Error:", stderr)
-                sys.exit(1)
-            return stdout
+            print(f"Started process {process.pid}")
+            if 'init' not in command:
+                stdout, stderr = process.communicate()
+                if process.returncode != 0:
+                    print("Error:", stderr)
+                    sys.exit(1)
+                return stdout
         except subprocess.CalledProcessError as e:
             print("Error:", e.stderr)
             sys.exit(1)
-
 
 class ModelPark:
     def __init__(self):

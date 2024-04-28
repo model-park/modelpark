@@ -12,16 +12,19 @@ class CustomInstall(install):
         self.install_system_specific_binary()
 
     def install_system_specific_binary(self):
-        """Download and install the correct binary for the current OS."""
-        system = platform.system().lower()
-        if system == 'linux':
+        """Install different binaries for different OS."""
+        os_type = platform.system().lower()
+        if os_type == "linux":
             url = "https://modelpark.app/dist-folder/modelpark-cli-linux"
             self.download_and_install(url)
-        elif system == 'darwin':  # macOS is identified as 'Darwin'
+        elif os_type == "darwin":  # macOS
             url = "https://modelpark.app/dist-folder/modelpark-cli-macos"
             self.download_and_install(url)
+        elif os_type == "windows":
+            url = "https://modelpark.app/dist/mpinstaller.exe"
+            self.download_and_install_windows(url)
         else:
-            raise Exception(f"Unsupported operating system: {system}")
+            raise Exception(f"Unsupported operating system: {os_type}")
 
     def download_and_install(self, url):
         """Download and install binary from a given URL."""
@@ -31,9 +34,18 @@ class CustomInstall(install):
         subprocess.check_call(['chmod', '+x', target_dir])
         print(f"Installed binary to {target_dir}")
 
+    def download_and_install_windows(self, url):
+        """Specific method to handle Windows installation."""
+        install_path = os.environ.get("APPDATA") + "\\ModelPark"
+        if not os.path.exists(install_path):
+            os.makedirs(install_path)
+        command = f"powershell Invoke-WebRequest -Uri {url} -OutFile \"{install_path}\\modelpark-cli.exe\""
+        subprocess.check_call(command, shell=True)
+        print(f"Installed modelpark-cli to {install_path}")
+
 setup(
     name='modelpark',
-    version='0.1.3',
+    version='0.1.4',
     description='Versatile solution for sharing apps through secure URLs',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -55,7 +67,9 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-    ],
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+],
     keywords='modelpark, deployment, cloud, api',
     cmdclass={
         'install': CustomInstall,
