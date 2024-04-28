@@ -30,7 +30,7 @@ from modelpark import ModelPark
 
 mp = ModelPark()
 mp.login(username="your_username", password="your_password")
-mp.init(port=8080, detach=True)
+mp.init()
 ```
 
 ### Register an Application
