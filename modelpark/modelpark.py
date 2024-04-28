@@ -3,6 +3,23 @@ import requests
 import subprocess
 import sys
 
+class CommandRunner:
+    """Executes system commands related to ModelPark CLI operations."""
+
+    @staticmethod
+    def run_command(command):
+        try:
+            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                print("Error:", stderr)
+                sys.exit(1)
+            return stdout
+        except subprocess.CalledProcessError as e:
+            print("Error:", e.stderr)
+            sys.exit(1)
+
+
 class ModelPark:
     def __init__(self):
         pass
@@ -21,9 +38,12 @@ class ModelPark:
         command = "modelpark init"
         if port:
             command += f" -p {port}"
-        if detach:
+
+        if detach !=True:
             command += f" -d {str(detach).lower()}"
-        CommandRunner.run_command(command)
+        print(f"Running command: {command}")  # Debug print
+        output = CommandRunner.run_command(command)
+        print("Initialization Output:", output)
 
     def stop(self):
         CommandRunner.run_command("modelpark stop")
@@ -51,17 +71,6 @@ class ModelPark:
         result = CommandRunner.run_command("modelpark ls")
         print(result)
 
-class CommandRunner:
-    """Executes system commands related to ModelPark CLI operations."""
-
-    @staticmethod
-    def run_command(command):
-        try:
-            output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
-            return output.decode('utf-8')
-        except subprocess.CalledProcessError as e:
-            print("Error:", e.output.decode('utf-8'))
-            sys.exit(1)
 
 class APIManager:
     """Manages API interactions for ModelPark."""
