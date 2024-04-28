@@ -3,7 +3,7 @@
 
 ModelPark provides a versatile platform to share and manage your ML models directly from your machine, offering a convenient Python API to manage these tasks programmatically, including controlling access and publishing applications.
 
-See (ModelPark)[https://modelpark.app/] website and platform for more details.
+See [ModelPark](https://modelpark.app/) website and platform for more details.
 
 ## Features
 
