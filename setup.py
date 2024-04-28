@@ -45,7 +45,7 @@ class CustomInstall(install):
 
 setup(
     name='modelpark',
-    version='0.1.5',
+    version='0.1.6',
     description='Versatile solution for sharing apps through secure URLs',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
