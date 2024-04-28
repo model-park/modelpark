@@ -31,8 +31,6 @@ class CustomInstall(install):
         subprocess.check_call(['chmod', '+x', target_dir])
         print(f"Installed binary to {target_dir}")
 
-
-
 setup(
     name='modelpark',
     version='0.1.1',
