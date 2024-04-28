@@ -51,12 +51,15 @@ mp.ls()
 
 ### Make an API Call to a Registered Application
 ```python
+from modelpark import APIManager
+mp_api = APIManager()
+
 user_credentials = {'username': 'your_username', 'password': 'your_password'}
 app_name = 'my-app'
 payload = {'key': 'value'}  # Payload required by the application
 
 # Make the API call
-response = mp.make_api_call(app_name, user_credentials, payload)
+response = mp_api.make_api_call(app_name, user_credentials, payload)
 print(response.json())  # Assuming the response is in JSON format
 ```
 
