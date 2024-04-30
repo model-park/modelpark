@@ -2,13 +2,26 @@ import json
 import requests
 import subprocess
 import sys
+import os
+import platform
 
 class CommandRunner:
     """Executes system commands related to ModelPark CLI operations."""
 
     @staticmethod
+    def get_executable_path():
+        """Returns the full path to the executable based on the operating system."""
+        home_dir = os.path.expanduser('~')  # Gets the home directory
+        if platform.system().lower() == 'windows':
+            return os.path.join(home_dir, 'modelpark.exe')  # Windows executable path
+        else:
+            return os.path.join(home_dir, 'modelpark')  # Unix/Mac executable path
+
+    @staticmethod
     def run_command(command):
         try:
+            executable_path = CommandRunner.get_executable_path()
+            command = f"{executable_path} {command}"
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             print(f"Started process {process.pid}")
             print (f"Command: {command}")
@@ -27,7 +40,7 @@ class ModelPark:
         pass
 
     def login(self, token=None, username=None, password=None):
-        command = "modelpark login"
+        command = "login"
         if token:
             command += f" -t {token}"
         if username:
@@ -37,10 +50,9 @@ class ModelPark:
         CommandRunner.run_command(command)
 
     def init(self, port=None, detach=True):
-        command = "modelpark init"
+        command = "init"
         if port:
             command += f" -p {port}"
-
         if detach !=True:
             command += f" -d {str(detach).lower()}"
         print(f"Running command: {command}")  # Debug print
@@ -48,24 +60,38 @@ class ModelPark:
         print("Initialization Output:", output)
 
     def stop(self):
-        CommandRunner.run_command("modelpark stop")
+        CommandRunner.run_command("stop")
 
     def logout(self):
-        CommandRunner.run_command("modelpark logout")
+        CommandRunner.run_command("logout")
 
     def register(self, port, name, file_path=None, access='private', password=None, framework=None):
         if framework:
-            command = f"modelpark register -p {port} -n {name} -a {access} -f {framework}"
+            command = f"register -p {port} -n {name} -a {access} -f {framework}"
         else:
-            command = f"modelpark register -p {port} -n {name} -a {access}"
+            command = f"register -p {port} -n {name} -a {access}"
         if file_path:
             command += f" {file_path}"
         if access == 'public' and password:
             command += f" -password {password}"
         CommandRunner.run_command(command)
+    
+    def register_port(self, name, port, access='private',password=None):
+        command = f"register  -n {name} -a {access} -p {port}"
+        if access == 'public' and password:
+            command += f" -password {password}"
+        CommandRunner.run_command(command)
+
+    def run_with_streamlit_and_register(self, name, file_path, access='private', password=None, port=None):
+        command = f"register {file_path} -n {name} -a {access} -f streamlit"
+        if port:
+            command += f" -p {port}"
+        if access == 'public' and password:
+            command += f" -password {password}"
+        CommandRunner.run_command(command)
 
     def kill(self, name=None, all=False):
-        command = "modelpark kill"
+        command = "kill"
         if all:
             command += " -a"
         elif name:
@@ -73,9 +99,12 @@ class ModelPark:
         CommandRunner.run_command(command)
 
     def ls(self):
-        result = CommandRunner.run_command("modelpark ls")
+        result = CommandRunner.run_command("ls")
         print(result)
 
+    def status(self):
+        result = CommandRunner.run_command("status")
+        print(result)
 
 class APIManager:
     """Manages API interactions for ModelPark."""
