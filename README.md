@@ -34,9 +34,16 @@ Here's how you can use the ModelPark Python package:
 ```python
 from modelpark import ModelPark
 
-mp = ModelPark()
+mp = ModelPark() # downloads the modelpark CLI binary/ executable to your home folder as "~/modelpark'
 mp.login(username="your_username", password="your_password")
 mp.init()
+```
+
+#### clear cache while init (remove existing modelpark CLI binaries from system)
+```python
+from modelpark import ModelPark
+
+mp = ModelPark(clear_cache=True)
 ```
 
 ### Register an Application 
@@ -49,7 +56,21 @@ mp.register(port=3000, name="my-app", access="public")
 #### Register a password protected app running on a certain port
 
 ```python
-mp.register(port=3000, name="my-app", access="public", password='123')
+mp.register_port(port=3000, name="my-app", access="public", password='123')
+```
+
+#### Register an app running on a certain port
+
+```python
+mp.register_port(port=3000, name="my-app", access="public")
+```
+
+#### Register a streamlit app that is not run yet (this starts the app as well)
+```python
+mp.run_with_streamlit_and_register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
+# generic registration also works >> 
+# mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
+
 ```
 
 #### Register a streamlit app that is not run yet 
@@ -57,9 +78,18 @@ mp.register(port=3000, name="my-app", access="public", password='123')
 mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
 ```
 
+#### Register a Fast API app while deploying
+add `register_port` within startup_event() function in FAST API app
+```python
+@app.on_event("startup")
+async def startup_event():
+    mp.register_port(port=5000, name="my-fast-api", access="public") 
+```    
+
 ### List Registered Applications
 ```python
 mp.ls()
+# or mp.status()
 ```
 
 ### Make an API Call to a Registered Application
@@ -85,6 +115,11 @@ mp.logout()
 ### Kill an Application
 ```python
 mp.kill(name="my-app")
+```
+
+### Kill all the registrations in this session
+```python
+mp.kill(all=True)
 ```
 
 This API provides a more Pythonic way of managing your applications with ModelPark compared to using the CLI directly.
