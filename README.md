@@ -3,6 +3,8 @@
 
 ModelPark provides a versatile platform to share and manage your ML models directly from your machine, offering a convenient Python API to manage these tasks programmatically, including controlling access and publishing applications.
 
+This library provides a more Pythonic way of managing your applications with [ModelPark](https://modelpark.app/) compared to using the CLI directly.
+
 See [ModelPark](https://modelpark.app/) website and platform for more details.
 
 ![image](https://github.com/model-park/modelpark/assets/25637056/6eac80e7-91e9-477a-bcce-bd7d369d932e)
@@ -122,4 +124,3 @@ mp.kill(name="my-app")
 mp.kill(all=True)
 ```
 
-This API provides a more Pythonic way of managing your applications with ModelPark compared to using the CLI directly.
