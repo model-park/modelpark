@@ -25,7 +25,7 @@ class CommandRunner:
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             print(f"Started process {process.pid}")
             print (f"Command: {command}")
-            if 'init' not in command:
+            if 'init' not in command: 
                 stdout, stderr = process.communicate()
                 if process.returncode != 0:
                     print("Error:", stderr)
@@ -34,7 +34,6 @@ class CommandRunner:
         except subprocess.CalledProcessError as e:
             print("Error:", e.stderr)
             sys.exit(1)
-
 
 class Install_ModelPark_CLI():
     def __init__(self, clear_cache=False):
