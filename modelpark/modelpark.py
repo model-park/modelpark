@@ -4,6 +4,8 @@ import subprocess
 import sys
 import os
 import platform
+from packaging import version
+
 
 class CommandRunner:
     """Executes system commands related to ModelPark CLI operations."""
@@ -37,11 +39,32 @@ class CommandRunner:
 
 class Install_ModelPark_CLI():
     def __init__(self, clear_cache=False):
+        from . import __version__
+        existing_cli_version = self.check_cli_version()
+        new_package_cli_version = __version__['cli_version']
+        # Parse the version strings
+        existing_cli_version = version.parse(existing_cli_version)
+        new_package_cli_version = version.parse(new_package_cli_version)
+        # Compare the versions
+        if new_package_cli_version > existing_cli_version:
+            print(f"More recent ModelPark CLI version found in the new package and the CLI will be upgraded.")
+            print(f"Existing CLI Version: {str(existing_cli_version)}")
+            print(f"New CLI Version: {str(new_package_cli_version)}")
+            clear_cache = True
+        else:
+            print(f"ModelPark CLI is up-to-date with the latest version.")
         if clear_cache:
             self.remove_existing_binary()
         if not self.is_existing_binary():
             #self.remove_existing_binary()  # Ensure any existing version is removed
             self.install_system_specific_dependencies()
+
+    def check_cli_version(self):
+        """Check the version of the installed ModelPark CLI."""
+        command = "version"
+        version = CommandRunner.run_command(command).strip("ModelPark CLI version: ")
+        print(f"ModelPark CLI version: {version}")
+        return version
 
     def remove_existing_binary(self):
         """Remove existing binary if it exists in the user's path."""
@@ -157,6 +180,14 @@ class ModelPark:
         output = CommandRunner.run_command(command)
         print("Initialization Output:", output)
 
+    def version(self):
+        # get version from __init__.py
+        from . import __version__
+        version_dict =  __version__
+        print (f"modelpark python sdk version: {version_dict['app_version']}")
+        print (f"modelpark CLI version: {version_dict['cli_version']}")
+        return version_dict
+    
     def stop(self):
         CommandRunner.run_command("stop")
 

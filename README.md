@@ -80,7 +80,7 @@ mp.run_with_streamlit_and_register(port=3000, name="my-app", file_path="~/my-app
 mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
 ```
 
-#### Register a Fast API app while deploying
+#### Register a Fast API app while deploying 
 add `register_port` within startup_event() function in FAST API app
 ```python
 @app.on_event("startup")
@@ -94,7 +94,7 @@ mp.ls()
 # or mp.status()
 ```
 
-### Make an API Call to a Registered Application
+### Make an API Call to a Registered Application <span style="color:red">(WORK IN PROGRESS... NOT AVAILABLE AT THE MOMENT !)</span>
 ```python
 from modelpark import APIManager
 mp_api = APIManager()
