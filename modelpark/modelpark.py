@@ -250,15 +250,19 @@ class APIManager:
         url = f"https://modelpark.app/api/app-project/access/{app_name}"
         if password:
             url += f"?password={password}"
-        if expire:
-            url += f"&expire={expire}"
-        
+            if expire:
+                url += f"&expiresIn={expire}"
+        else:
+            if expire:
+                url += f"?expiresIn={expire}"   
+
         headers = {'Authorization': f'Bearer {auth_token}'}
         response = requests.get(url, headers=headers, data={})
         return response.json()['accessToken']
 
     @staticmethod
-    def make_api_call(app_name, user_credentials, request_payload, password=None, expire=None, extension=None):
+    def make_api_call(app_name, user_credentials, request_payload=None, password=None, 
+                      expire=None, extension=None, files=None):
         auth_token = APIManager.get_auth_token(user_credentials)
         access_token = APIManager.get_access_token(app_name, auth_token, password=password, expire=expire)
         #url = f"https://modelpark.app/api/app-project/access/{app_name}"
@@ -271,7 +275,43 @@ class APIManager:
         #headers = {'Authorization': f'Bearer {access_token}'}
         headers = {
             "x-access-token": access_token}
+        
+        if files:
+            response = requests.post(url, headers=headers, files=files)
+        else:
+            response = requests.get(url, headers=headers, params=request_payload)
+        # Print the response
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return response.text
+    
 
-        return requests.get(url, headers=headers, params=request_payload)
+    @staticmethod
+    def make_api_call_with_access_token(app_name, access_token, request_payload=None,
+                                        extension=None, files=None):
+
+        url = f"http://{app_name}-proxy.modelpark.app"
+
+        if extension:
+            url += f"/{extension}"   
+
+        #headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            "x-access-token": access_token}
+        
+        if files:
+            response = requests.post(url, headers=headers, files=files)
+        else:
+            response = requests.get(url, headers=headers, params=request_payload)
+        # Print the response
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return response.text
+    
+
+
+
 
 
