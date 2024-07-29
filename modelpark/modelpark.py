@@ -246,18 +246,32 @@ class APIManager:
         return response.json()['authToken']
 
     @staticmethod
-    def get_access_token(app_name, auth_token):
+    def get_access_token(app_name, auth_token, password=None, expire=None):
         url = f"https://modelpark.app/api/app-project/access/{app_name}"
+        if password:
+            url += f"?password={password}"
+        if expire:
+            url += f"&expire={expire}"
+        
         headers = {'Authorization': f'Bearer {auth_token}'}
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, data={})
         return response.json()['accessToken']
 
     @staticmethod
-    def make_api_call(app_name, user_credentials, payload):
+    def make_api_call(app_name, user_credentials, request_payload, password=None, expire=None, extension=None):
         auth_token = APIManager.get_auth_token(user_credentials)
-        access_token = APIManager.get_access_token(app_name, auth_token)
-        url = f"https://modelpark.app/api/app-project/access/{app_name}"
-        headers = {'Authorization': f'Bearer {access_token}'}
-        return requests.get(url, headers=headers, json=payload)
+        access_token = APIManager.get_access_token(app_name, auth_token, password=password, expire=expire)
+        #url = f"https://modelpark.app/api/app-project/access/{app_name}"
+
+        url = f"http://{app_name}-proxy.modelpark.app"
+
+        if extension:
+            url += f"/{extension}"   
+
+        #headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            "x-access-token": access_token}
+
+        return requests.get(url, headers=headers, params=request_payload)
 
 

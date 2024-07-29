@@ -112,18 +112,35 @@ mp.kill(all=True)
 
 
 ### Make an API Call to a Registered Application 
-#### (WORK IN PROGRESS... NOT AVAILABLE AT THE MOMENT !)
 ```python
 from modelpark import APIManager
 mp_api = APIManager()
 
 user_credentials = {'username': 'your_username', 'password': 'your_password'}
 app_name = 'my-app'
-payload = {'key': 'value'}  # Payload required by the application
+extension = 'api_extension' # or None
+password = 'psw' # or None if no password protection
+request_payload = {'key': 'value'}  # Payload required by the application
 
 # Make the API call
-response = mp_api.make_api_call(app_name, user_credentials, payload)
+response = mp_api.make_api_call(app_name, user_credentials, request_payload=request_payload, password=password, extension=extension)
 print(response.json())  # Assuming the response is in JSON format
+
+# get an access token to hit a modelpark api endpoint
+
+import requests
+
+expire ='7d' # x days or None
+password = '1234' # or None if no password protection
+auth_token = mp_api.get_auth_token(user_credentials)
+access_token = mp_api.get_access_token(app_name, auth_token, password=password, expire=expire)
+
+headers = {
+    "x-access-token": access_token}
+
+query = {'key': 'value'} 
+
+requests.get(url, headers=headers, params=query).json()
 ```
 
 
