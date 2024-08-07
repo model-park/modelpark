@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='modelpark',
-    version='0.1.18',
+    version='0.1.19',
     description='Versatile solution for sharing apps through secure URLs',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',

@@ -262,12 +262,13 @@ class APIManager:
 
     @staticmethod
     def make_api_call(app_name, user_credentials, request_payload=None, password=None, 
-                      expire=None, extension=None, files=None):
+                      expire=None, extension=None, files=None, audio_file_path=None):
+        
         auth_token = APIManager.get_auth_token(user_credentials)
         access_token = APIManager.get_access_token(app_name, auth_token, password=password, expire=expire)
         #url = f"https://modelpark.app/api/app-project/access/{app_name}"
 
-        url = f"http://{app_name}-proxy.modelpark.app"
+        url = f"https://{app_name}-proxy.modelpark.app"
 
         if extension:
             url += f"/{extension}"   
@@ -278,6 +279,13 @@ class APIManager:
         
         if files:
             response = requests.post(url, headers=headers, files=files)
+        elif audio_file_path:
+            with open(audio_file_path, 'rb') as audio_file:
+                audio_file_binary = {
+                        "audio": audio_file
+                }
+                #print ({'headers': headers, 'url':url, 'files':audio_file_binary})
+                response = requests.post(url, headers=headers, files=audio_file_binary)
         else:
             response = requests.get(url, headers=headers, params=request_payload)
         # Print the response
@@ -289,9 +297,9 @@ class APIManager:
 
     @staticmethod
     def make_api_call_with_access_token(app_name, access_token, request_payload=None,
-                                        extension=None, files=None):
+                                        extension=None, files=None, audio_file_path=None):
 
-        url = f"http://{app_name}-proxy.modelpark.app"
+        url = f"https://{app_name}-proxy.modelpark.app"
 
         if extension:
             url += f"/{extension}"   
@@ -302,6 +310,12 @@ class APIManager:
         
         if files:
             response = requests.post(url, headers=headers, files=files)
+        elif audio_file_path:
+            with open(audio_file_path, 'rb') as audio_file:
+                audio_file_binary = {
+                        "audio": audio_file
+                }
+                response = requests.post(url, headers=headers, files=audio_file_binary)
         else:
             response = requests.get(url, headers=headers, params=request_payload)
         # Print the response
