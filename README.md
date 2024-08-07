@@ -133,9 +133,6 @@ from modelpark import APIManager
 
 mp_api = APIManager()
 
-user_credentials = {"email": 'hellogard@modelpark.app',
-                   "password": 'hellogard'}
-
 expire ='7d' # x days or None
 app_name = 'my-app'
 extension = 'api_extension' # or None
