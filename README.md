@@ -117,17 +117,38 @@ from modelpark import APIManager
 mp_api = APIManager()
 
 user_credentials = {'username': 'your_username', 'password': 'your_password'}
+expire ='7d' # x days or None
 app_name = 'my-app'
 extension = 'api_extension' # or None
 password = 'psw' # or None if no password protection
 request_payload = {'key': 'value'}  # Payload required by the application
 
 # Make the API call
-response = mp_api.make_api_call(app_name, user_credentials, request_payload=request_payload, password=password, extension=extension)
+response = mp_api.make_api_call(app_name, user_credentials, request_payload=request_payload, password=password, extension=extension, expire=expire)
 print(response.json())  # Assuming the response is in JSON format
+```
+#### Make an API call for an audio file as `files` 
+```python
+from modelpark import APIManager
 
-# get an access token to hit a modelpark api endpoint
+mp_api = APIManager()
 
+user_credentials = {"email": 'hellogard@modelpark.app',
+                   "password": 'hellogard'}
+
+expire ='7d' # x days or None
+app_name = 'my-app'
+extension = 'api_extension' # or None
+password = 'psw' # or None if no password protection
+
+audio_file_path = "./audio_file.m4a"
+
+response = mp_api.make_api_call(app_name, user_credentials=user_credentials, extension=extension, audio_file_path=audio_file_path)
+
+```
+
+#### Get an access token to hit a modelpark api endpoint
+```python
 import requests
 
 expire ='7d' # x days or None
@@ -142,5 +163,3 @@ query = {'key': 'value'}
 
 requests.get(url, headers=headers, params=query).json()
 ```
-
-
