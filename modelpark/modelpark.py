@@ -1,239 +1,188 @@
-import json
-import requests
+import shutil
 import subprocess
 import sys
 import os
 import platform
-from packaging import version
+import requests
 
 
 class CommandRunner:
-    """Executes system commands related to ModelPark CLI operations."""
+    """Executes system commands using the ModelPark Go CLI."""
 
     @staticmethod
-    def get_executable_path():
-        """Returns the full path to the executable based on the operating system."""
-        home_dir = os.path.expanduser('~')  # Gets the home directory
+    def find_executable():
+        """Find the modelpark CLI binary on the system."""
+        # 1. Check PATH via shutil.which
+        path = shutil.which('modelpark')
+        if path:
+            return path
+
+        # 2. Check common install locations
+        home = os.path.expanduser('~')
+        candidates = [
+            '/usr/local/bin/modelpark',
+            os.path.join(home, '.local', 'bin', 'modelpark'),
+            os.path.join(home, 'modelpark'),
+        ]
+
         if platform.system().lower() == 'windows':
-            return os.path.join(home_dir, 'modelpark.exe')  # Windows executable path
-        else:
-            return os.path.join(home_dir, 'modelpark')  # Unix/Mac executable path
+            candidates = [
+                os.path.join(os.environ.get('PROGRAMFILES', ''), 'modelpark', 'modelpark.exe'),
+                os.path.join(home, 'modelpark.exe'),
+                os.path.join(home, '.local', 'bin', 'modelpark.exe'),
+            ]
+
+        for candidate in candidates:
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+
+        return None
 
     @staticmethod
     def run_command(command):
-        try:
-            executable_path = CommandRunner.get_executable_path()
-            command = f"{executable_path} {command}"
-            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            print(f"Started process {process.pid}")
-            print (f"Command: {command}")
-            if 'init' not in command: 
-                stdout, stderr = process.communicate()
-                if process.returncode != 0:
-                    print("Error:", stderr)
-                    sys.exit(1)
-                return stdout
-        except subprocess.CalledProcessError as e:
-            print("Error:", e.stderr)
+        """Run a CLI command and return stdout."""
+        executable = CommandRunner.find_executable()
+        if not executable:
+            print(
+                "Error: ModelPark CLI not found. "
+                "Install it from https://github.com/model-park/cli/releases"
+            )
             sys.exit(1)
 
-class Install_ModelPark_CLI():
-    def __init__(self, clear_cache=False):
-        from . import __version__
-        existing_cli_version = self.check_cli_version()
-        new_package_cli_version = __version__['cli_version']
-        # Parse the version strings
-        existing_cli_version = version.parse(existing_cli_version)
-        new_package_cli_version = version.parse(new_package_cli_version)
-        # Compare the versions
-        if new_package_cli_version > existing_cli_version:
-            print(f"More recent ModelPark CLI version found in the new package and the CLI will be upgraded.")
-            print(f"Existing CLI Version: {str(existing_cli_version)}")
-            print(f"New CLI Version: {str(new_package_cli_version)}")
-            clear_cache = True
-        else:
-            print(f"ModelPark CLI is up-to-date with the latest version.")
-        if clear_cache:
-            self.remove_existing_binary()
-        if not self.is_existing_binary():
-            #self.remove_existing_binary()  # Ensure any existing version is removed
-            self.install_system_specific_dependencies()
+        full_command = f"{executable} {command}"
+        try:
+            result = subprocess.run(
+                full_command, shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            if result.returncode != 0:
+                print("Error:", result.stderr.strip())
+            return result.stdout
+        except Exception as e:
+            print("Error running command:", e)
+            sys.exit(1)
 
-    def check_cli_version(self):
-        """Check the version of the installed ModelPark CLI."""
-        command = "version"
-        version = CommandRunner.run_command(command).strip("ModelPark CLI version: ")
-        print(f"ModelPark CLI version: {version}")
-        return version
-
-    def remove_existing_binary(self):
-        """Remove existing binary if it exists in the user's path."""
-        os_type = platform.system().lower()
-        if os_type in ["linux", "darwin"]:  # Unix-like systems including macOS
-            home_dir = os.path.expanduser('~')
-            binary_path = os.path.join(home_dir, "modelpark")
-            if os.path.exists(binary_path):
-                os.remove(binary_path)
-                print(f"Removed existing binary at {binary_path}")
-        elif os_type == "windows":
-            home_dir = os.environ.get("USERPROFILE")
-            executable_path = os.path.join(home_dir, "modelpark.exe")
-            if os.path.exists(executable_path):
-                os.remove(executable_path)
-                print(f"Removed existing binary at {executable_path}")
-
-    def is_existing_binary(self):
-        """Remove existing binary if it exists in the user's path."""
-        os_type = platform.system().lower()
-        if os_type in ["linux", "darwin"]:  # Unix-like systems including macOS
-            home_dir = os.path.expanduser('~')
-            binary_path = os.path.join(home_dir, "modelpark")
-            if os.path.exists(binary_path):
-                return True
-            else:
-                return False
-        elif os_type == "windows":
-            home_dir = os.environ.get("USERPROFILE")
-            executable_path = os.path.join(home_dir, "modelpark.exe")
-            if os.path.exists(executable_path):
-                return True
-            else:
-                return False
-            
-    def remove_existing_binary(self):
-        """Remove existing binary if it exists in the user's path."""
-        os_type = platform.system().lower()
-        if os_type in ["linux", "darwin"]:  # Unix-like systems including macOS
-            home_dir = os.path.expanduser('~')
-            binary_path = os.path.join(home_dir, "modelpark")
-            if os.path.exists(binary_path):
-                os.remove(binary_path)
-                print(f"Removed existing binary at {binary_path}")
-        elif os_type == "windows":
-            home_dir = os.environ.get("USERPROFILE")
-            executable_path = os.path.join(home_dir, "modelpark.exe")
-            if os.path.exists(executable_path):
-                os.remove(executable_path)
-                print(f"Removed existing binary at {executable_path}")
-
-    def install_system_specific_dependencies(self):
-        """Install system-specific dependencies based on the OS."""
-        os_type = platform.system().lower()
-        if os_type in ["linux", "darwin"]:  # Unix-like systems including macOS
-            url = "https://modelpark.app/dist-folder/modelpark-cli-linux" if os_type == "linux" else "https://modelpark.app/dist-folder/modelpark-cli-macos"
-            self.download_and_install(url)
-        elif os_type == "windows":
-            url = "https://modelpark.app/dist/mpinstaller.exe"
-            self.download_and_install_windows(url)
-
-    def download_and_install(self, url):
-        """Download and install binary for Unix-like systems."""
-        home_dir = os.path.expanduser('~')
-        binary_path = os.path.join(home_dir, "modelpark")
-        subprocess.check_call(['curl', url, '-o', binary_path])
-        subprocess.check_call(['chmod', '+x', binary_path])
-        #self.add_to_path(home_dir)
-
-    def add_to_path(self, target_dir):
-        """Add the installation directory to the user's PATH in .bashrc or .bash_profile."""
-        path_update_script = f'\nexport PATH="$PATH:{target_dir}"\n'
-        profile_path = os.path.join(os.path.expanduser('~'), '.bash_profile' if platform.system().lower() == 'darwin' else '.bashrc')
-        with open(profile_path, 'a') as profile_file:
-            profile_file.write(path_update_script)
-        print(f"Added {target_dir} to PATH in {profile_path}")
-
-    def download_and_install_windows(self, url):
-        """Specific method to handle Windows installation."""
-        home_dir = os.environ.get("USERPROFILE")
-        executable_path = os.path.join(home_dir, "modelpark.exe")
-        subprocess.check_call(['powershell', f'Invoke-WebRequest -Uri {url} -OutFile "{executable_path}"'])
-        self.add_to_path_windows(home_dir)
-
-    def add_to_path_windows(self, install_path):
-        """Add the installation directory to the PATH for Windows."""
-        command = f'[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User) + ";{install_path}", [EnvironmentVariableTarget]::User)'
-        subprocess.check_call(['powershell', command], shell=True)
-        print(f"Added {install_path} to PATH for Windows")
 
 class ModelPark:
-    def __init__(self, clear_cache=False):
-        cli = Install_ModelPark_CLI(clear_cache)
-        pass
+    """Python wrapper for the ModelPark Go CLI.
 
-    def login(self, token=None, username=None, password=None):
+    The CLI must be installed separately — see
+    https://github.com/model-park/cli/releases
+    """
+
+    def __init__(self):
+        if CommandRunner.find_executable() is None:
+            print(
+                "Warning: ModelPark CLI not found on this system. "
+                "Install it from https://github.com/model-park/cli/releases"
+            )
+
+    def login(self, token=None, email=None):
+        """Authenticate with ModelPark.
+
+        Args:
+            token: API token for authentication.
+            email: Email for interactive login.
+        """
         command = "login"
         if token:
-            command += f" -t {token}"
-        if username:
-            command += f" -u {username}"
-        if password:
-            command += f" -p {password}"
-        CommandRunner.run_command(command)
-
-    def init(self, port=None, detach=True):
-        command = "init"
-        if port:
-            command += f" -p {port}"
-        if detach !=True:
-            command += f" -d {str(detach).lower()}"
-        print(f"Running command: {command}")  # Debug print
-        output = CommandRunner.run_command(command)
-        print("Initialization Output:", output)
-
-    def version(self):
-        # get version from __init__.py
-        from . import __version__
-        version_dict =  __version__
-        print (f"modelpark python sdk version: {version_dict['app_version']}")
-        print (f"modelpark CLI version: {version_dict['cli_version']}")
-        return version_dict
-    
-    def stop(self):
-        CommandRunner.run_command("stop")
+            command += f" --token {token}"
+        elif email:
+            command += f" --email {email}"
+        return CommandRunner.run_command(command)
 
     def logout(self):
-        CommandRunner.run_command("logout")
+        """Log out of ModelPark."""
+        return CommandRunner.run_command("logout")
 
-    def register(self, port, name, file_path=None, access='private', password=None, framework=None):
-        if framework:
-            command = f"register -p {port} -n {name} -a {access} -f {framework}"
-        else:
-            command = f"register -p {port} -n {name} -a {access}"
-        if file_path:
-            command += f" {file_path}"
-        if access == 'public' and password:
-            command += f" -password {password}"
-        CommandRunner.run_command(command)
-    
-    def register_port(self, name, port, access='private',password=None):
-        command = f"register  -n {name} -a {access} -p {port}"
-        if access == 'public' and password:
-            command += f" -password {password}"
-        CommandRunner.run_command(command)
+    def run(self, name, command_args, port=None, access=None, framework=None):
+        """Run a command and expose it via ModelPark tunnel (background).
 
-    def run_with_streamlit_and_register(self, name, file_path, access='private', password=None, port=None):
-        command = f"register {file_path} -n {name} -a {access} -f streamlit"
+        Args:
+            name: App name (will be accessible at https://name.modelpark.app).
+            command_args: Command and arguments to run (e.g. "streamlit run app.py").
+            port: Port the app listens on (auto-detected if omitted).
+            access: Access level — 'private' or 'public'.
+            framework: Framework hint (e.g. 'streamlit', 'gradio').
+        """
+        command = f"run --name {name}"
         if port:
-            command += f" -p {port}"
-        if access == 'public' and password:
-            command += f" -password {password}"
-        CommandRunner.run_command(command)
+            command += f" --port {port}"
+        if access:
+            command += f" --access {access}"
+        if framework:
+            command += f" --framework {framework}"
+        command += f" -- {command_args}"
+        return CommandRunner.run_command(command)
 
-    def kill(self, name=None, all=False):
-        command = "kill"
-        if all:
-            command += " -a"
-        elif name:
-            command += f" -n {name}"
-        CommandRunner.run_command(command)
+    def serve(self, name, port, access=None, framework=None):
+        """Tunnel an already-running local app via ModelPark (background).
+
+        Args:
+            name: App name (will be accessible at https://name.modelpark.app).
+            port: Local port the app is running on.
+            access: Access level — 'private' or 'public'.
+            framework: Framework hint (e.g. 'streamlit', 'gradio').
+        """
+        command = f"serve --name {name} --port {port}"
+        if access:
+            command += f" --access {access}"
+        if framework:
+            command += f" --framework {framework}"
+        return CommandRunner.run_command(command)
 
     def ls(self):
+        """List running apps."""
         result = CommandRunner.run_command("ls")
         print(result)
+        return result
+
+    def logs(self, name, follow=False):
+        """View logs for a running app.
+
+        Args:
+            name: App name.
+            follow: If True, stream logs continuously (blocking).
+        """
+        command = f"logs {name}"
+        if follow:
+            command += " -f"
+        result = CommandRunner.run_command(command)
+        print(result)
+        return result
+
+    def stop(self, name):
+        """Stop a running app by name.
+
+        Args:
+            name: App name to stop.
+        """
+        return CommandRunner.run_command(f"stop {name}")
+
+    def kill(self, name):
+        """Kill a running app by name.
+
+        Args:
+            name: App name to kill.
+        """
+        return CommandRunner.run_command(f"kill {name}")
 
     def status(self):
+        """Show CLI status."""
         result = CommandRunner.run_command("status")
         print(result)
+        return result
+
+    def version(self):
+        """Show version information."""
+        from . import __version__
+        version_dict = __version__
+        print(f"modelpark python sdk version: {version_dict['app_version']}")
+        cli_output = CommandRunner.run_command("version")
+        if cli_output:
+            print(f"modelpark CLI: {cli_output.strip()}")
+        return version_dict
+
 
 class APIManager:
     """Manages API interactions for ModelPark."""
@@ -254,78 +203,61 @@ class APIManager:
                 url += f"&expiresIn={expire}"
         else:
             if expire:
-                url += f"?expiresIn={expire}"   
+                url += f"?expiresIn={expire}"
 
         headers = {'Authorization': f'Bearer {auth_token}'}
         response = requests.get(url, headers=headers, data={})
         return response.json()['accessToken']
 
     @staticmethod
-    def make_api_call(app_name, user_credentials, request_payload=None, password=None, 
+    def make_api_call(app_name, user_credentials, request_payload=None, password=None,
                       expire=None, extension=None, files=None, audio_file_path=None):
-        
+
         auth_token = APIManager.get_auth_token(user_credentials)
         access_token = APIManager.get_access_token(app_name, auth_token, password=password, expire=expire)
-        #url = f"https://modelpark.app/api/app-project/access/{app_name}"
 
-        url = f"https://{app_name}-proxy.modelpark.app"
+        url = f"https://{app_name}.modelpark.app"
 
         if extension:
-            url += f"/{extension}"   
+            url += f"/{extension}"
 
-        #headers = {'Authorization': f'Bearer {access_token}'}
-        headers = {
-            "x-access-token": access_token}
-        
+        headers = {"x-access-token": access_token}
+
         if files:
             response = requests.post(url, headers=headers, files=files)
         elif audio_file_path:
             with open(audio_file_path, 'rb') as audio_file:
-                audio_file_binary = {
-                        "audio": audio_file
-                }
-                #print ({'headers': headers, 'url':url, 'files':audio_file_binary})
+                audio_file_binary = {"audio": audio_file}
                 response = requests.post(url, headers=headers, files=audio_file_binary)
         else:
             response = requests.get(url, headers=headers, params=request_payload)
-        # Print the response
+
         if response.status_code == 200:
             return response.json()
         else:
             return response.text
-    
 
     @staticmethod
     def make_api_call_with_access_token(app_name, access_token, request_payload=None,
                                         extension=None, files=None, audio_file_path=None):
 
-        url = f"https://{app_name}-proxy.modelpark.app"
+        url = f"https://{app_name}.modelpark.app"
 
         if extension:
-            url += f"/{extension}"   
+            url += f"/{extension}"
 
-        #headers = {'Authorization': f'Bearer {access_token}'}
-        headers = {
-            "x-access-token": access_token}
-        
+        headers = {"x-access-token": access_token}
+
         if files:
             response = requests.post(url, headers=headers, files=files)
         elif audio_file_path:
             with open(audio_file_path, 'rb') as audio_file:
-                audio_file_binary = {
-                        "audio": audio_file
-                }
+                audio_file_binary = {"audio": audio_file}
                 response = requests.post(url, headers=headers, files=audio_file_binary)
         else:
             response = requests.get(url, headers=headers, params=request_payload)
-        # Print the response
+
         if response.status_code == 200:
             return response.json()
         else:
             return response.text
-    
-
-
-
-
-

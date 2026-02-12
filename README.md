@@ -1,162 +1,120 @@
+# ModelPark Python SDK
 
-# ModelPark
+Python SDK for the [ModelPark](https://modelpark.app/) CLI — publish, manage, and access ML apps via secure tunnels.
 
-ModelPark provides a versatile platform to share and manage your ML models directly from your machine, offering a convenient Python API to manage these tasks programmatically, including controlling access and publishing applications.
+The SDK provides two interfaces:
 
-This library provides a more Pythonic way of managing your applications with [ModelPark](https://modelpark.app/)  compared to using the CLI directly.
+- **`ModelPark`** — Python wrapper around the ModelPark Go CLI (apps run in the background by default)
+- **`APIManager`** — Direct HTTP client for calling published ModelPark apps
 
-See [ModelPark](https://modelpark.app/) website and platform for more details.
+## Prerequisites
 
-![image](https://github.com/model-park/modelpark/assets/25637056/6eac80e7-91e9-477a-bcce-bd7d369d932e)
-
-![image](https://github.com/model-park/modelpark/assets/25637056/be495106-915d-4989-818d-dad7bb5abc71)
-
-## Features
-
-- Share models directly from the Python API.
-- Publish and manage applications using the ModelPark Python API.
-- Configure access management according to your needs through Python methods.
+Install the ModelPark CLI binary from [GitHub Releases](https://github.com/model-park/cli/releases). The Python package does **not** bundle the CLI — it must be installed separately and available on your `PATH`.
 
 ## Installation
 
-To install ModelPark, you can use pip:
 ```bash
 pip install modelpark
 ```
 
-## Configuration
+## Quick Start
 
-Ensure Python and pip are installed on your machine. This API interfaces with the ModelPark CLI but manages interactions programmatically through Python.
+### CLI Wrapper
 
-## Usage
-
-Here's how you can use the ModelPark Python package:
-
-### Initialize and Login
 ```python
 from modelpark import ModelPark
 
-mp = ModelPark() # downloads the modelpark CLI binary/ executable to your home folder as "~/modelpark'
-mp.login(username="your_username", password="your_password")
-mp.init()
-```
+mp = ModelPark()
 
-#### clear cache while init (remove existing modelpark CLI binaries from system)
-```python
-from modelpark import ModelPark
+# Authenticate
+mp.login(token="your_token")
 
-mp = ModelPark(clear_cache=True)
-```
+# Serve an already-running local app (background)
+mp.serve(name="my-app", port=8000)
 
-### Register an Application 
+# Or run a command and tunnel it (background)
+mp.run(name="my-streamlit", command_args="streamlit run app.py", framework="streamlit")
 
-#### Register an app running on a certain port
-```python
-mp.register(port=3000, name="my-app", access="public") 
-# access='private' if private (not visible/ accessible in modelpark dashboard)
-```
-#### Register a password protected app running on a certain port
-
-```python
-mp.register_port(port=3000, name="my-app", access="public", password='123')
-```
-
-#### Register an app running on a certain port
-
-```python
-mp.register_port(port=3000, name="my-app", access="public")
-```
-
-#### Register a streamlit app that is not run yet (this starts the app as well)
-```python
-mp.run_with_streamlit_and_register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
-# generic registration also works >> 
-# mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
-
-```
-
-#### Register a streamlit app that is not run yet 
-```python
-mp.register(port=3000, name="my-app", file_path="~/my-app/streamlit-app.py", access="public", framework="streamlit")
-```
-
-#### Register a Fast API app while deploying 
-add `register_port` within startup_event() function in FAST API app
-```python
-@app.on_event("startup")
-async def startup_event():
-    mp.register_port(port=5000, name="my-fast-api", access="public") 
-```    
-
-### List Registered Applications
-```python
+# List running apps
 mp.ls()
-# or mp.status()
-```
 
-### Stop and Logout
-```python
-mp.stop()
+# View logs
+mp.logs("my-app")
+
+# Stop / kill
+mp.stop("my-app")
+mp.kill("my-streamlit")
+
 mp.logout()
 ```
 
-### Kill an Application
-```python
-mp.kill(name="my-app")
-```
+### API Access
 
-### Kill all the registrations in this session
-```python
-mp.kill(all=True)
-```
-
-
-### Make an API Call to a Registered Application 
-```python
-from modelpark import APIManager
-mp_api = APIManager()
-
-user_credentials = {'username': 'your_username', 'password': 'your_password'}
-expire ='7d' # x days or None
-app_name = 'my-app'
-extension = 'api_extension' # or None
-password = 'psw' # or None if no password protection
-request_payload = {'key': 'value'}  # Payload required by the application
-
-# Make the API call
-response = mp_api.make_api_call(app_name, user_credentials, request_payload=request_payload, password=password, extension=extension, expire=expire)
-print(response.json())  # Assuming the response is in JSON format
-```
-#### Make an API call for an audio file as `files` 
 ```python
 from modelpark import APIManager
 
-mp_api = APIManager()
+api = APIManager()
 
-expire ='7d' # x days or None
-app_name = 'my-app'
-extension = 'api_extension' # or None
-password = 'psw' # or None if no password protection
+user_credentials = {"username": "your_username", "password": "your_password"}
+app_name = "my-app"
 
-audio_file_path = "./audio_file.m4a"
+# Simple API call
+response = api.make_api_call(app_name, user_credentials, request_payload={"key": "value"})
 
-response = mp_api.make_api_call(app_name, user_credentials=user_credentials, extension=extension, audio_file_path=audio_file_path)
+# With password-protected app
+response = api.make_api_call(app_name, user_credentials, password="secret", expire="7d")
 
+# With file upload
+response = api.make_api_call(app_name, user_credentials, audio_file_path="./audio.m4a")
+
+# Reuse access token for multiple calls
+auth_token = api.get_auth_token(user_credentials)
+access_token = api.get_access_token(app_name, auth_token)
+response = api.make_api_call_with_access_token(app_name, access_token, request_payload={"key": "value"})
 ```
 
-#### Get an access token to hit a modelpark api endpoint
-```python
-import requests
+## API Reference
 
-expire ='7d' # x days or None
-password = '1234' # or None if no password protection
-auth_token = mp_api.get_auth_token(user_credentials)
-access_token = mp_api.get_access_token(app_name, auth_token, password=password, expire=expire)
+### `ModelPark` — CLI Wrapper
 
-headers = {
-    "x-access-token": access_token}
+| Method | Description |
+|--------|-------------|
+| `login(token=None, email=None)` | Authenticate with token or email |
+| `run(name, command_args, port=None, access=None, framework=None)` | Run a command and expose it via tunnel (background) |
+| `serve(name, port, access=None, framework=None)` | Tunnel an already-running local port (background) |
+| `ls()` | List running apps |
+| `logs(name, follow=False)` | View logs for an app |
+| `stop(name)` | Stop a running app |
+| `kill(name)` | Kill a running app |
+| `status()` | Show CLI status |
+| `version()` | Show SDK and CLI version |
+| `logout()` | Log out |
 
-query = {'key': 'value'} 
+### `APIManager` — Direct HTTP API
 
-requests.get(url, headers=headers, params=query).json()
-```
+| Method | Description |
+|--------|-------------|
+| `get_auth_token(user_credentials)` | Get an authentication token |
+| `get_access_token(app_name, auth_token, password=None, expire=None)` | Get an access token for an app |
+| `make_api_call(app_name, user_credentials, ...)` | Full API call (auth + access + request) |
+| `make_api_call_with_access_token(app_name, access_token, ...)` | API call with a pre-obtained access token |
+
+## Migration from v0.1.x
+
+| v0.1.x | v0.2.0 | Notes |
+|--------|--------|-------|
+| `ModelPark(clear_cache=True)` | `ModelPark()` | CLI installed separately, no auto-download |
+| `mp.login(username=..., password=...)` | `mp.login(token=...)` or `mp.login(email=...)` | Token-based auth |
+| `mp.init(port=...)` | *(removed)* | No process manager needed |
+| `mp.register(port, name, access)` | `mp.serve(name, port, access)` | Background by default |
+| `mp.register(port, name, file_path, framework)` | `mp.run(name, command_args, framework)` | Background by default |
+| `mp.run_with_streamlit_and_register(...)` | `mp.run(name, "streamlit run app.py", framework="streamlit")` | Unified run command |
+| `mp.register_port(name, port, access)` | `mp.serve(name, port, access)` | Renamed |
+| `mp.stop()` | `mp.stop("app-name")` | Now requires app name |
+| `mp.kill(name=..., all=True)` | `mp.kill("app-name")` | Kill by name |
+| *(none)* | `mp.logs("app-name", follow=True)` | New — view/follow logs |
+| App URL: `myapp-proxy.modelpark.app` | `myapp.modelpark.app` | Simplified URLs |
+
+## License
+
+MIT
